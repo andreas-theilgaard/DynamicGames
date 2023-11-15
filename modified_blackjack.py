@@ -31,7 +31,7 @@ for i in range(N):
         elif (j<i and i <=TARGET) or (j>TARGET and i<=TARGET):
             V[i,j,:,:,-1] = 1
         elif (i==j and i<=TARGET) or (i>TARGET and j>TARGET):
-            V[i,j,:,:,-1] = 0.0 #draw
+            V[i,j,:,:,-1] = 0.0 #draw: can be set to 0.5
 
 
 def is_between_0_and_1(arr):
@@ -50,7 +50,7 @@ def is_mixed(res):
 # If player 2 has 6 or higher player 1 wins hence:
 V[:6,6:,:,:,:] = 1.0
 # If player 1 and player 2 has 6 or higher on their hand then we have a draw:
-V[6:,6:,:,:,:] = 0.0 #draw
+V[6:,6:,:,:,:] = 0.0 #draw: can be set to 0.5
 # If player 1 has 6 or higher player 1 losses hence
 V[6:,:6,:,:,:] = 0.0
 
@@ -94,5 +94,21 @@ for t in range(T-2,-1,-1):
                                 #print("Degenerative solution")
 
 
+#%% kan være praktisk og sammenligne A og B for de forskellige kombinationer af k1 og k2
+# Det giver ikke meaning for mig at for t = T-3, k1 = 0, k2 = 1 at V[3,4,k1,k2,t] = 0.444 ,
+# min intuition fortæller mig at det burde give 0.333.
 
+t = T-3
+
+A = V[:,:,1,1,t]
+B = V[:,:,1,1,t+1]
+
+A = V[:,:,0,1,t]
+B = V[:,:,0,1,t+1]
+
+A = V[:,:,1,0,t]
+B = V[:,:,1,0,t+1]
+
+A = V[:,:,0,0,t]
+B = V[:,:,0,0,t+1]
 
