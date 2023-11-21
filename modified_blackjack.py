@@ -48,11 +48,11 @@ def is_mixed(res):
 
 
 # If player 2 has 6 or higher player 1 wins hence:
-V[:6,6:,:,:,:] = 1.0
+V[:TARGET+1,TARGET+1:,:,:,:] = 1.0
 # If player 1 and player 2 has 6 or higher on their hand then we have a draw:
-V[6:,6:,:,:,:] = 0.5 #draw: can be set to 0.5
+V[TARGET+1:,TARGET+1:,:,:,:] = 0.5 #draw: can be set to 0.5
 # If player 1 has 6 or higher player 1 losses hence
-V[6:,:6,:,:,:] = 0.0
+V[TARGET+1:,:TARGET+1,:,:,:] = 0.0
 
 for t in range(T-2,-1,-1):
     for i in range(TARGET+1):
@@ -86,8 +86,21 @@ for t in range(T-2,-1,-1):
 
 
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+fig, ax= plt.subplots(2, 2)
+im_00 = ax[0,0].imshow(V[:,:,0,0,0])
+ax[0,0].set_title('k1=0, k2=0')
 
-V[:,:,0,0,0]
+im_01 = ax[0,1].imshow(V[:,:,0,1,0])
+ax[0,1].set_title('k1=0, k2=1')
+
+im_10 = ax[1,0].imshow(V[:,:,1,0,0])
+ax[1,0].set_title('k1=1, k2=0')
+im_11 = ax[1,1].imshow(V[:,:,1,1,0])
+ax[1,1].set_title('k1=1, k2=1')
+plt.show()
+
 
 # t = T-3
 
