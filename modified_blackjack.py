@@ -31,7 +31,7 @@ for i in range(N):
         elif (j<i and i <=TARGET) or (j>TARGET and i<=TARGET):
             V[i,j,:,:,-1] = 1
         elif (i==j and i<=TARGET) or (i>TARGET and j>TARGET):
-            V[i,j,:,:,-1] = 0.0 #draw: can be set to 0.5
+            V[i,j,:,:,-1] = 0.5 #draw: can be set to 0.5
 
 
 def is_between_0_and_1(arr):
@@ -50,12 +50,11 @@ def is_mixed(res):
 # If player 2 has 6 or higher player 1 wins hence:
 V[:6,6:,:,:,:] = 1.0
 # If player 1 and player 2 has 6 or higher on their hand then we have a draw:
-V[6:,6:,:,:,:] = 0.0 #draw: can be set to 0.5
+V[6:,6:,:,:,:] = 0.5 #draw: can be set to 0.5
 # If player 1 has 6 or higher player 1 losses hence
 V[6:,:6,:,:,:] = 0.0
 
 for t in range(T-2,-1,-1):
-    print(t)
     for i in range(TARGET+1):
         for j in range(TARGET+1):
             for k1 in range(U-1,-1,-1):
@@ -67,48 +66,42 @@ for t in range(T-2,-1,-1):
                         V[i,j,k1,k2,t] = v22       
                     elif k1 == 1 and k2 == 0: # player 1 has stopped, player 2 can stop or take a card
                         v12 = np.mean(V[i,j+1:(j+3)+1,k1,k2,t+1])
-                        V[i,j,k1,k2,t] = max(V[i,j,k1,k2,t+1],v12)
+                        V[i,j,k1,k2,t] = min(V[i,j,k1,k2,t+1],v12)
                     elif k1 == 0 and k2 == 1: # player 2 has stopped, player 1 can stop or take a card
                         v21 = np.mean(V[i+1:(i+3)+1,j,k1,k2,t+1])
                         V[i,j,k1,k2,t] = max(V[i,j,k1,k2,t+1],v21)
                     elif k1 == 0 and k2 == 0: # both players can stop or take a card
                         v11 = np.mean(V[i+1:(i+3)+1,j+1:(j+3)+1,k1,k2,t+1])
 
+                        if i == 1 and j==0 and t == 0:                            
+                            print("her")
+
                         payoff_p1 = np.array([[v11,v21],[v12,v22]]) 
                         payoff_p2 = 1-payoff_p1
                         strategy = nash.Game(payoff_p1, payoff_p2)
                         eqs = strategy.support_enumeration()
                         res = list(eqs)
-                        if is_mixed(res):
-                            print(f"t={t} , (i,j)={i,j} Mixed strategies")
-                            V[i,j,k1,k2,t] = res[0][0] @ payoff_p1 @ res[0][1]
+                        V[i,j,k1,k2,t] = res[0][0] @ payoff_p1 @ res[0][1]
                             
-                        else:
-                            if len(res) == 1:
-                                row,col = np.where(res[0][0]==1)[0][0],np.where(res[0][1]==1)[0][0]
-                                V[i,j,k1,k2,t] = payoff_p1[row,col]
-        
-                            else:
-                                row,col = np.where(res[0][0]==1)[0][0],np.where(res[0][1]==1)[0][0]
-                                V[i,j,k1,k2,t] = payoff_p1[row,col]
-                                #print("Degenerative solution")
 
 
-#%% kan være praktisk og sammenligne A og B for de forskellige kombinationer af k1 og k2
-# Det giver ikke meaning for mig at for t = T-3, k1 = 0, k2 = 1 at V[3,4,k1,k2,t] = 0.444 ,
-# min intuition fortæller mig at det burde give 0.333.
 
-t = T-3
 
-A = V[:,:,1,1,t]
-B = V[:,:,1,1,t+1]
+V[:,:,0,0,0]
 
-A = V[:,:,0,1,t]
-B = V[:,:,0,1,t+1]
+# t = T-3
 
-A = V[:,:,1,0,t]
-B = V[:,:,1,0,t+1]
+# A = V[:,:,1,1,t]
+# B = V[:,:,1,1,t+1]
 
-A = V[:,:,0,0,t]
-B = V[:,:,0,0,t+1]
+# A = V[:,:,0,1,t]
+# B = V[:,:,0,1,t+1]
 
+# A = V[:,:,1,0,t]
+# B = V[:,:,1,0,t+1]
+
+# A = V[:,:,0,0,t]
+# B = V[:,:,0,0,t+1]
+
+
+# V[3,4,0,1,t]
