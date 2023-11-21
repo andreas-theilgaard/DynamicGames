@@ -12,13 +12,14 @@
 
 import numpy as np
 import nashpy as nash
+from tqdm import tqdm
 
 
-N = 9
-T = 7
+N = 32
+T = 24
 U = 2
-
-TARGET = 5
+TARGET = 21
+N_CARDS = 10
 
 # Value function from player 1's perspective
 V = np.empty((N,N,U,U,T))*np.nan
@@ -54,7 +55,7 @@ V[TARGET+1:,TARGET+1:,:,:,:] = 0.5 #draw: can be set to 0.5
 # If player 1 has 6 or higher player 1 losses hence
 V[TARGET+1:,:TARGET+1,:,:,:] = 0.0
 
-for t in range(T-2,-1,-1):
+for t in tqdm(range(T-2,-1,-1)):
     for i in range(TARGET+1):
         for j in range(TARGET+1):
             for k1 in range(U-1,-1,-1):
@@ -65,16 +66,13 @@ for t in range(T-2,-1,-1):
                         v22 = V[i,j,k1,k2,t+1]
                         V[i,j,k1,k2,t] = v22       
                     elif k1 == 1 and k2 == 0: # player 1 has stopped, player 2 can stop or take a card
-                        v12 = np.mean(V[i,j+1:(j+3)+1,k1,k2,t+1])
+                        v12 = np.mean(V[i,j+1:(j+N_CARDS)+1,k1,k2,t+1])
                         V[i,j,k1,k2,t] = min(V[i,j,k1,k2,t+1],v12)
                     elif k1 == 0 and k2 == 1: # player 2 has stopped, player 1 can stop or take a card
-                        v21 = np.mean(V[i+1:(i+3)+1,j,k1,k2,t+1])
+                        v21 = np.mean(V[i+1:(i+N_CARDS)+1,j,k1,k2,t+1])
                         V[i,j,k1,k2,t] = max(V[i,j,k1,k2,t+1],v21)
                     elif k1 == 0 and k2 == 0: # both players can stop or take a card
-                        v11 = np.mean(V[i+1:(i+3)+1,j+1:(j+3)+1,k1,k2,t+1])
-
-                        if i == 1 and j==0 and t == 0:                            
-                            print("her")
+                        v11 = np.mean(V[i+1:(i+N_CARDS)+1,j+1:(j+N_CARDS)+1,k1,k2,t+1])
 
                         payoff_p1 = np.array([[v11,v21],[v12,v22]]) 
                         payoff_p2 = 1-payoff_p1
@@ -83,6 +81,11 @@ for t in range(T-2,-1,-1):
                         res = list(eqs)
                         V[i,j,k1,k2,t] = res[0][0] @ payoff_p1 @ res[0][1]
                             
+
+
+
+
+
 
 
 
@@ -99,7 +102,8 @@ im_10 = ax[1,0].imshow(V[:,:,1,0,0])
 ax[1,0].set_title('k1=1, k2=0')
 im_11 = ax[1,1].imshow(V[:,:,1,1,0])
 ax[1,1].set_title('k1=1, k2=1')
-plt.show()
+plt.tight_layout()
+plt.savefig('21.pdf',dpi=500)
 
 
 # t = T-3

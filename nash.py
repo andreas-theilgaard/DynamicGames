@@ -19,6 +19,18 @@ len(res)
 
 
 
+import nashpy as nash 
+import numpy as np
+p1 = np.array([[0.7]])
+p2 = 1-p1
+rps = nash.Game(p1, p2)
+
+eqs = rps.support_enumeration()
+
+
+res = list(eqs)
+
+
 
 import nashpy as nash
 import numpy as np
