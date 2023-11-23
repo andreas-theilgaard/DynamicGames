@@ -2,11 +2,11 @@ import nashpy as nash
 import numpy as np
 
 p1 = np.array([
-    [3,1],[0,2]
+    [0,1],[0,1]
 ])
 
 p2 = np.array([
-    [2,1],[0,3]
+    [0,1],[0,1]
 ])
 
 rps = nash.Game(p1, p2)
@@ -17,7 +17,7 @@ eqs = rps.support_enumeration()
 res = list(eqs)
 len(res)
 
-
+#%%
 
 import nashpy as nash 
 import numpy as np
