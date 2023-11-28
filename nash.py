@@ -2,12 +2,13 @@ import nashpy as nash
 import numpy as np
 
 p1 = np.array([
-    [0,1],[0,1]
+    [0.5,0.6,0.75],
+    [0.6,0.5,0.6],
+    [0.75,0.6,0.5]
 ])
 
-p2 = np.array([
-    [0,1],[0,1]
-])
+
+p2 = 1 - p1
 
 rps = nash.Game(p1, p2)
 
@@ -15,7 +16,7 @@ eqs = rps.support_enumeration()
 
 
 res = list(eqs)
-len(res)
+print(res)
 
 #%%
 
