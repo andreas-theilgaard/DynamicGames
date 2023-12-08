@@ -2,14 +2,17 @@ import numpy as np
 import nashpy as nash
 import warnings
 import pandas as pd
-
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from scipy import stats
 
 TARGET = 5
 N = TARGET+1
-G = 5
+G = 5 #5
 B = 6
+SIM_GAMES = 500
 
-ORDER_TYPE = 4 #1,2,4 # 'Poly', 'Exp'
+ORDER_TYPE = 0.5 #1,2,4 # 'Poly', 'Exp'
 
 def fmap(X,U,w):
     # Unpack variables
@@ -64,40 +67,19 @@ def get_admissible_controls(x):
 # 5x5 example
 # =============================================================================
 
-def get_probs(order):
-    x = np.linspace(0,4,5)
+def get_probs(order,n):
+    x = np.linspace(0,n,n+1)
     b = 0.5
-    a = (0.9-0.5)/4**order
+    a = (0.99-0.5)/(n)**order
     return a*x**order + b
-p0,p1,p2,p3,p4 = get_probs(ORDER_TYPE)
+p_array = get_probs(ORDER_TYPE,G-1)
+q_array = 1-p_array
 
-# if TYPE == 'Poly':
-#     # a=0.03 b=-0.025 c=0.5
-#     p0 = 0.5
-#     p1 = 0.505
-#     p2 = 0.57
-#     p3 = 0.695
-#     p4 = 0.88
-# elif TYPE == 'Exp':
-
-#     p0 = 0.5
-#     p1 = 0.60
-#     p2 = 0.65
-#     p3 = 0.75
-#     p4 = 0.90
-# elif TYPE == 'Linear':
-#     p0 = 0.5
-#     p1 = 0.6
-#     p2 = 0.7
-#     p3 = 0.8
-#     p4 = 0.9
-
-P1_win = np.array([[p0, 1-p1, 1-p2, 1-p3,1-p4],
-                    [p1, p0, 1-p1, 1-p2, 1-p3],
-                    [p2, p1, p0, 1-p1,1-p2],
-                    [p3, p2, p1, p0,1-p1],
-                    [p4, p3, p2, p1,p0]
-                    ])
+P1_win = np.zeros((G,G))
+P1_win[0:,0]=p_array[:]
+for i in range(1,len(p_array)):
+    P1_win[i:,i]=p_array[:-i]
+    P1_win[:i,i] = q_array[1:i+1][::-1]
 
 # =============================================================================
 
@@ -162,19 +144,10 @@ for n1 in range(N-2,-1,-1):
 
 
 
+
 # print(V[:,0,0,:,0,0])
 
-print(V[:,1,0,:,1,0])
-
-
-print(V[:,1,0,:,1,0])
-
-
-
-
-
-
-# print(counter/counter_global)
+print(counter/counter_global,"her")
 # #%%
 def get_optimal_policy(x): # This function depends on the value array V
     
@@ -228,57 +201,132 @@ print("Simulation of a Game")
 print("------------------")
 
 # # Initial state
-X = [0,0,1,0,0,1]
+game_df = pd.DataFrame({'Game':[],'t':[],'n1':[],'g1':[],'b1':[],'n2':[],'g2':[],'b2':[],'u1':[],'u2':[]})
 
-# # Array to visialize game
-game = X
+plt.figure()
+for game_realizations in tqdm(range(SIM_GAMES)):
+    X = [0,0,1,0,0,1]
+    # # Array to visialize game
+    game = X
+    game_on = True
+    t = 0
+    wins_1 = 0
+    wins_2 = 0
+    #game_df = pd.DataFrame({'round':[],'t':[],'n1':[],'g1':[],'b1':[],'n2':[],'g2':[],'b2':[],'u1':[],'u2':[]})
 
-game_df = pd.DataFrame({'t':[],'n1':[],'g1':[],'b1':[],'n2':[],'g2':[],'b2':[],'u1':[],'u2':[]})
 
-game_on = True
-t = 0
+    while game_on:
+        #print(f"X = {X}")
+        #print(f"Score: n1={X[0]} and n2={X[3]}")
+        
+        # Take optimal desicion
+        policy,U1,U2,payoff_p1 = get_optimal_policy(X)
+        #print(policy)
+        u1 = np.random.choice(list(range(U1+1)),p=policy[-1][0])
+        u1_vec = np.zeros(G)
+        u1_vec[u1] = 1
+        #print(f"Player 1: Gear={X[1]}, Bank={X[2]} | decision: u1 = {u1}")
+        
+        u2 = np.random.choice(list(range(U2+1)),p=policy[-1][1])
+        u2_vec = np.zeros(G)
+        u2_vec[u2] = 1
+        #print(f"Player 2: Gear={X[4]}, Bank={X[5]} | decision: u2 = {u2}")
+        
+        U = np.array([u1, u2])
+        game_df.loc[len(game_df)] = [int(game_realizations+1),int(t),int(wins_1),int(X[1]),int(X[2]),int(wins_2),int(X[4]),int(X[5]),int(u1),int(u2)]
 
-wins_1 = 0
-wins_2 = 0
-while game_on:
-    print(f"X = {X}")
-    print(f"Score: n1={X[0]} and n2={X[3]}")
+        # Simulate outcome
+        p = u1_vec @ P1_win @ u2_vec
+        w = np.random.choice([1, 0], p = [p, 1-p])
+        #print(f"Did player 1 win: w = {w}")
+
+        wins_1+=w
+        wins_2 += (1-w)
+        # Advance the system to next state
+        X = fmap(X,U,w)
+        game = np.row_stack((game,X))
+        t+=1
+        if X[0] == TARGET or X[3] == TARGET:
+            game_on = False
+            game_df.loc[len(game_df)] = [int(game_realizations+1),int(t),int(wins_1),int(X[1]),int(X[2]),int(wins_2),int(X[4]),int(X[5]),np.nan,np.nan]
     
-    # Take optimal desicion
-    policy,U1,U2,payoff_p1 = get_optimal_policy(X)
-    
-    u1 = np.random.choice(list(range(U1+1)),p=policy[0][0])
-    u1_vec = np.zeros(G)
-    u1_vec[u1] = 1
-    print(f"Player 1: Gear={X[1]}, Bank={X[2]} | decision: u1 = {u1}")
-    
-    u2 = np.random.choice(list(range(U2+1)),p=policy[0][1])
-    u2_vec = np.zeros(G)
-    u2_vec[u2] = 1
-    print(f"Player 2: Gear={X[4]}, Bank={X[5]} | decision: u2 = {u2}")
-    
-    U = np.array([u1, u2])
-    game_df.loc[len(game_df)] = [t,wins_1,X[1],X[2],wins_2,X[4],X[5],u1,u2]
+    plt.plot(game_df['n1']-game_df['n2'])
+    #print("------------------")
+    #print("Game over")
+    #print(f"X = {X}")
 
-    # Simulate outcome
-    p = u1_vec @ P1_win @ u2_vec
-    w = np.random.choice([1, 0], p = [p, 1-p])
-    print(f"Did player 1 win: w = {w}")
+    #print(f"Simulated Game outcome using {ORDER_TYPE} initialization")
+    #print(game_df.to_latex(index=False))
 
-    wins_1+=w
-    wins_2 += (1-w)
-    # Advance the system to next state
-    X = fmap(X,U,w)
-    game = np.row_stack((game,X))
-    t+=1
-    if X[0] == TARGET or X[3] == TARGET:
-        game_on = False
-print("------------------")
-print("Game over")
-print(f"X = {X}")
+plt.savefig(f"Lineplot {ORDER_TYPE} G={G}.pdf",dpi=500)
 
-print(f"Simulated Game outcome using {ORDER_TYPE} initialization")
-print(game_df.to_latex(index=False))
+plt.figure()
+game_df['S']=game_df['n1']-game_df['n2']
+filtered_game_df = game_df[game_df['u1'].isna()]
+
+counts,bins,_ = plt.hist(filtered_game_df['S'],bins=np.arange(-G,G+2,1),density=True)
+
+np.var(game_df['S'])
+
+np.sum(counts*(bins[:-1])**2)
+
+len(counts)
+len(bins)
+np.var(counts*bins[:-1]) # to match dimension
+
+
+
+np.var(counts,ddof=0)
+
+
+print(counter/counter_global,"her")
+print(f"Skewness: {stats.skew(counts)}")
+plt.savefig(f"Histograms {ORDER_TYPE} G={G}.pdf",dpi=500)
+
+
+
+
+# # # obs = np.array([])
+# # # time = np.array([])
+# # # plt.figure()
+# # # for game_real in range(int(game_df['Game'].max())):
+# # #     tmp_res = game_df[game_df['Game']==game_real+1]['S']
+# # #     obs = np.append(obs,tmp_res)
+# # #     time = np.append(time,game_df)
+# # # plt.hist2d(time,obs,density=True)
+
+# # # plt.savefig(f"{ORDER_TYPE}_2dhist.pdf",dpi=400)
+
+
+obs = np.array([])
+time = np.array([])
+plt.figure()
+for game_real in range(int(game_df['Game'].max())):
+    tmp_res = game_df[game_df['Game']==game_real+1]['S']
+    if tmp_res.shape[0] <10:
+        tmp_res = np.append(tmp_res,np.zeros(10-tmp_res.shape[0]))
+    obs = np.append(obs,tmp_res)
+    time = np.append(time,np.arange(0,10,1))
+bins,count_x,count_y,_ = plt.hist2d(time,obs,density=True,bins=[np.unique(time),np.arange(-G,G+2,1)])
+plt.imshow(bins)
+plt.savefig(f"2d Histograms {ORDER_TYPE} G={G}.pdf",dpi=500)
+
+
+# plt.savefig(f"{ORDER_TYPE}_2dhist.pdf",dpi=400)
+# NEW = pd.DataFrame({'t':game_df['t'],'S':(game_df['n1']-game_df['n2']).values})
+
+
+
+
+# NEW.columns
+# import matplotlib.pyplot as plt
+# game_df['g1']
+# plt.hist(game_df['b2'])
+# plt.show()
+
+# plt.hist2d(game_df['b1'], game_df['b2'])
+# plt.show()
+
 
 # #%%
 
