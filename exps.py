@@ -260,62 +260,64 @@ plt.xticks([-5,-4,-3,-2,-1,0,1,2,3,4,5])
 plt.xlim(-6,6)
 plt.savefig(f"Histograms Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
-obs = np.array([])
-time = np.array([])
-fig,ax = plt.subplots(figsize=(10,8))
-for game_real in range(int(game_df['Game'].max())):
-    tmp_res = game_df[game_df['Game']==game_real+1]['S']
-    #if tmp_res.shape[0] <12:
-    #    tmp_res = np.append(tmp_res,np.zeros(12-tmp_res.shape[0]))
-    obs = np.append(obs,tmp_res.values)
-    time = np.append(time,np.arange(0,len(tmp_res),1))
-bins,count_x,count_y,_ = plt.hist2d(time,obs,density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
+# obs = np.array([])
+# time = np.array([])
+# fig,ax = plt.subplots(figsize=(10,8))
+# for game_real in range(int(game_df['Game'].max())):
+#     tmp_res = game_df[game_df['Game']==game_real+1]['S']
+#     #if tmp_res.shape[0] <12:
+#     #    tmp_res = np.append(tmp_res,np.zeros(12-tmp_res.shape[0]))
+#     obs = np.append(obs,tmp_res.values)
+#     time = np.append(time,np.arange(0,len(tmp_res),1))
+# bins,count_x,count_y,_ = plt.hist2d(time,obs,density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
 
 
-bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
+# bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
 
 
-game_df[(game_df['t']==8.0)&(game_df['S']==1.0)]
+# game_df[(game_df['t']==8.0)&(game_df['S']==1.0)]
 
-cax = ax.imshow(bins, cmap='plasma')  # Use your preferred colormap
-for i in range(bins.shape[0]):
-    for j in range(bins.shape[1]):
-        if bins[j,i]>0:
-            ax.text(i+0.2, j-5+0.3, f"{bins[j,i]*100:.1f}%", color='w',fontsize=8)
-plt.title(f"Heatmap of game scores for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=10)
-plt.ylabel(f"Number of rounds won",fontname="Times New Roman",fontsize=8)
-plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=8)
-plt.tight_layout()
-plt.xlim(0,10)
-plt.xticks(np.arange(0,12,1))
-plt.yticks(np.arange(-5,6,1))
-plt.show()
-plt.savefig(f"Heatmap Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
+# cax = ax.imshow(bins, cmap='plasma')  # Use your preferred colormap
+# for i in range(bins.shape[0]):
+#     for j in range(bins.shape[1]):
+#         if bins[j,i]>0:
+#             ax.text(i+0.2, j-5+0.3, f"{bins[j,i]*100:.1f}%", color='w',fontsize=8)
+# plt.title(f"Heatmap of game scores for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=10)
+# plt.ylabel(f"Number of rounds won",fontname="Times New Roman",fontsize=8)
+# plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=8)
+# plt.tight_layout()
+# plt.xlim(0,10)
+# plt.xticks(np.arange(0,12,1))
+# plt.yticks(np.arange(-5,6,1))
+# plt.show()
+# plt.savefig(f"Heatmap Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
 
 
 import seaborn as sns
-annotations = np.zeros_like(bins)
-fig, axes = plt.subplots(figsize=(10,8))
-BINS = bins.copy().T
-for i in range(bins.shape[0]):
-    for j in range(bins.shape[1]):
-        if bins[i,j]>0:
-            annotations[i,j]= bins[i,j]
-        else:
-            annotations[i,j] = None
-mask = BINS <= 0
-sns.heatmap(BINS,annot=annotations.T,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
-plt.show()
+# annotations = np.zeros_like(bins)
+# fig, axes = plt.subplots(figsize=(10,8))
+# BINS = bins.copy().T
+# for i in range(bins.shape[0]):
+#     for j in range(bins.shape[1]):
+#         if bins[i,j]>0:
+#             annotations[i,j]= bins[i,j]
+#         else:
+#             annotations[i,j] = None
+# mask = BINS <= 0
+# sns.heatmap(BINS,annot=annotations.T,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
+# plt.show()
 
-NEW_BINS = BINS.copy()
-for i in range(NEW_BINS.shape[1]):
-    NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
+# NEW_BINS = BINS.copy()
+# for i in range(NEW_BINS.shape[1]):
+#     NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
 
 
 bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=False,bins=[np.unique(time),np.arange(-G,G+1,1)])
 BINS = bins.copy().T
-
+NEW_BINS = BINS.copy()
+for i in range(NEW_BINS.shape[1]):
+    NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
 import seaborn as sns
 annotations = np.zeros_like(NEW_BINS)
 fig, axes = plt.subplots(figsize=(10,8))
