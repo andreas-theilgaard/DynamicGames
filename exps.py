@@ -10,9 +10,9 @@ TARGET = 5
 N = TARGET+1
 G = 5 #5
 B = 6
-SIM_GAMES = 500
+SIM_GAMES = 1000
 
-ORDER_TYPE = 0.5 #1,2,4 # 'Poly', 'Exp'
+ORDER_TYPE = 1 #1,2,4 # 'Poly', 'Exp'
 
 def fmap(X,U,w):
     # Unpack variables
@@ -45,27 +45,6 @@ def get_admissible_controls(x):
         U2 = ((G-1)-g2)
     # Return admissible set of controls
     return U1, U2
-
-# 2x2 example
-#P1_win = np.array([[0.5,0.3],[0.7,0.5]])
-# 3x3 example
-#P1_win = np.array([[0.5,0.2,0.1],[0.8,0.5,0.2],[0.9,0.8,0.5]])
-# 4x4 example
-# =============================================================================
-# p0 = 0.5
-# p1 = 0.6
-# p2 = 0.8
-# p3 = 0.9
-# P1_win = np.array([[p0, 1-p1, 1-p2, 1-p3],
-#                     [p1, p0, 1-p1, 1-p2],
-#                     [p2, p1, p0, 1-p1],
-#                     [p3, p2, p1, p0]
-#                     ])
-# =============================================================================
-
-
-# 5x5 example
-# =============================================================================
 
 def get_probs(order,n):
     x = np.linspace(0,n,n+1)
@@ -137,7 +116,7 @@ for n1 in range(N-2,-1,-1):
                             # Check if any runtime warnings were caught
                             if w:
                                 counter+=1
-                                print(f"Counter: {counter} payoff_p1: {payoff_p1} X: {X}")
+                                #print(f"Counter: {counter} payoff_p1: {payoff_p1} X: {X}")
 
                         V[n1,g1,b1,n2,g2,b2] = res[0][0] @ payoff_p1 @ res[0][1]
 
@@ -257,97 +236,97 @@ for game_realizations in tqdm(range(SIM_GAMES)):
 
     #print(f"Simulated Game outcome using {ORDER_TYPE} initialization")
     #print(game_df.to_latex(index=False))
+game_df
+plt.title(f"Game score progress over time for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=10)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=8)
+plt.ylabel(f"Game score",fontname="Times New Roman",fontsize=8)
+plt.tight_layout()
+plt.savefig(f"Lineplot Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
-plt.savefig(f"Lineplot {ORDER_TYPE} G={G}.pdf",dpi=500)
 
 plt.figure()
 game_df['S']=game_df['n1']-game_df['n2']
 filtered_game_df = game_df[game_df['u1'].isna()]
-
-counts,bins,_ = plt.hist(filtered_game_df['S'],bins=np.arange(-G,G+2,1),density=True)
-
-np.var(game_df['S'])
-
-np.sum(counts*(bins[:-1])**2)
-
-len(counts)
-len(bins)
-np.var(counts*bins[:-1]) # to match dimension
-
-
-
-np.var(counts,ddof=0)
-
-
+#counts,bins,_ = plt.hist(filtered_game_df['S'],bins=np.arange(-G,G+2,1),density=True,rwidth=0.9)
+counts,bins,_ = plt.hist(filtered_game_df['S'],bins=np.arange(-G - 0.5, (G+2) + 1.5, 1),density=True,rwidth=0.9)
 print(counter/counter_global,"her")
 print(f"Skewness: {stats.skew(counts)}")
-plt.savefig(f"Histograms {ORDER_TYPE} G={G}.pdf",dpi=500)
-
-
-
-
-# # # obs = np.array([])
-# # # time = np.array([])
-# # # plt.figure()
-# # # for game_real in range(int(game_df['Game'].max())):
-# # #     tmp_res = game_df[game_df['Game']==game_real+1]['S']
-# # #     obs = np.append(obs,tmp_res)
-# # #     time = np.append(time,game_df)
-# # # plt.hist2d(time,obs,density=True)
-
-# # # plt.savefig(f"{ORDER_TYPE}_2dhist.pdf",dpi=400)
-
+print(f"Variance: {game_df.groupby(['Game'])[['S']].var().mean().values[0]}")
+plt.title(f"Distribution of game scores for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=12)
+plt.xlabel(f"Game scores",fontname="Times New Roman",fontsize=10)
+plt.ylabel(f"Density",fontname="Times New Roman",fontsize=10)
+plt.tight_layout()
+plt.xticks([-5,-4,-3,-2,-1,0,1,2,3,4,5])
+plt.xlim(-6,6)
+plt.savefig(f"Histograms Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
 obs = np.array([])
 time = np.array([])
-plt.figure()
+fig,ax = plt.subplots(figsize=(10,8))
 for game_real in range(int(game_df['Game'].max())):
     tmp_res = game_df[game_df['Game']==game_real+1]['S']
-    if tmp_res.shape[0] <10:
-        tmp_res = np.append(tmp_res,np.zeros(10-tmp_res.shape[0]))
-    obs = np.append(obs,tmp_res)
-    time = np.append(time,np.arange(0,10,1))
-bins,count_x,count_y,_ = plt.hist2d(time,obs,density=True,bins=[np.unique(time),np.arange(-G,G+2,1)])
-plt.imshow(bins)
-plt.savefig(f"2d Histograms {ORDER_TYPE} G={G}.pdf",dpi=500)
+    #if tmp_res.shape[0] <12:
+    #    tmp_res = np.append(tmp_res,np.zeros(12-tmp_res.shape[0]))
+    obs = np.append(obs,tmp_res.values)
+    time = np.append(time,np.arange(0,len(tmp_res),1))
+bins,count_x,count_y,_ = plt.hist2d(time,obs,density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
 
 
-# plt.savefig(f"{ORDER_TYPE}_2dhist.pdf",dpi=400)
-# NEW = pd.DataFrame({'t':game_df['t'],'S':(game_df['n1']-game_df['n2']).values})
+bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=True,bins=[np.unique(time),np.arange(-G - 0.5, (G+1) + 1.5, 1)])
+
+
+game_df[(game_df['t']==8.0)&(game_df['S']==1.0)]
+
+cax = ax.imshow(bins, cmap='plasma')  # Use your preferred colormap
+for i in range(bins.shape[0]):
+    for j in range(bins.shape[1]):
+        if bins[j,i]>0:
+            ax.text(i+0.2, j-5+0.3, f"{bins[j,i]*100:.1f}%", color='w',fontsize=8)
+plt.title(f"Heatmap of game scores for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=10)
+plt.ylabel(f"Number of rounds won",fontname="Times New Roman",fontsize=8)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=8)
+plt.tight_layout()
+plt.xlim(0,10)
+plt.xticks(np.arange(0,12,1))
+plt.yticks(np.arange(-5,6,1))
+plt.show()
+plt.savefig(f"Heatmap Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
 
 
+import seaborn as sns
+annotations = np.zeros_like(bins)
+fig, axes = plt.subplots(figsize=(10,8))
+BINS = bins.copy().T
+for i in range(bins.shape[0]):
+    for j in range(bins.shape[1]):
+        if bins[i,j]>0:
+            annotations[i,j]= bins[i,j]
+        else:
+            annotations[i,j] = None
+mask = BINS <= 0
+sns.heatmap(BINS,annot=annotations.T,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
+plt.show()
 
-# NEW.columns
-# import matplotlib.pyplot as plt
-# game_df['g1']
-# plt.hist(game_df['b2'])
-# plt.show()
-
-# plt.hist2d(game_df['b1'], game_df['b2'])
-# plt.show()
+NEW_BINS = BINS.copy()
+for i in range(NEW_BINS.shape[1]):
+    NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
 
 
-# #%%
+bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=False,bins=[np.unique(time),np.arange(-G,G+1,1)])
+BINS = bins.copy().T
 
-# # All 16 combinations of g1,b1,g2 and b2 for 2x2 matrix
-# #V[n1,g1,b1,n2,g2,b2] 
-# V[:,1,1,:,1,1]
-# V[:,1,1,:,1,0]
-# V[:,1,1,:,0,1]
-# V[:,1,0,:,1,1]
-# V[:,0,1,:,1,1]
-# V[:,1,1,:,0,0]
-# V[:,1,0,:,1,0]
-# V[:,0,1,:,1,0]
-# V[:,1,0,:,0,1]
-# V[:,0,1,:,0,1]
-# V[:,0,0,:,1,1]
-# V[:,1,0,:,0,0]
-# V[:,0,1,:,0,0]
-# V[:,0,0,:,1,0]
-# V[:,0,0,:,0,1]
-# A = V[:,0,0,:,0,0]
-                        
+import seaborn as sns
+annotations = np.zeros_like(NEW_BINS)
+fig, axes = plt.subplots(figsize=(10,8))
+for i in range(NEW_BINS.shape[0]):
+    for j in range(NEW_BINS.shape[1]):
+        if NEW_BINS[i,j]>0:
+            annotations[i,j]= NEW_BINS[i,j]
+        else:
+            annotations[i,j] = None
+mask = NEW_BINS <= 0
+sns.heatmap(NEW_BINS,annot=annotations,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
+plt.show()
 
 

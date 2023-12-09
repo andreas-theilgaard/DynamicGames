@@ -12,8 +12,8 @@ TARGET = 5
 N = TARGET+1
 G = 5 #5
 B = 6
-SIM_GAMES = 500
-ORDER_TYPE = 0.5 #1,2,4 # 'Poly', 'Exp'
+SIM_GAMES = 1000
+ORDER_TYPE = 1 #1,2,4 # 'Poly', 'Exp'
 
 def fmap(X,U,w):
     # Unpack variables
@@ -77,14 +77,14 @@ def get_probs(order,n,end_point=0.99):
 
 
 def init_game(X):
-    ORDER_TYPE,end_point = X
+    order,end_point = X
     variance = 2.7
     if end_point>1.0:
         variance= variance+end_point*PENALTY
     if end_point <=0.5:
         variance= variance+((0.5+end_point)*PENALTY*(1+(0.5+end_point)))
 
-    p_array = get_probs(order=ORDER_TYPE,n=G-1,end_point=end_point)
+    p_array = get_probs(order=order,n=G-1,end_point=end_point)
     q_array = 1-p_array
 
     P1_win = np.zeros((G,G))
@@ -262,13 +262,45 @@ def init_game(X):
                 game_df.loc[len(game_df)] = [int(game_realizations+1),int(t),int(wins_1),int(X[1]),int(X[2]),int(wins_2),int(X[4]),int(X[5]),np.nan,np.nan]
     game_df['S']=game_df['n1']-game_df['n2']
 
-    variance = np.var(game_df['S'])
+    variance = game_df.groupby(['Game'])[['S']].var().mean().values[0]#np.var(game_df['S'])
     # if end_point>1.0:
     #     variance= variance+end_point*PENALTY
     # if end_point <=0.5:
     #     variance= variance+((0.5+end_point)*PENALTY*(1+(0.5+end_point)))
-    print(variance)
     return variance
 
 
-res = minimize(fun=init_game,x0=[2,0.90],options={'maxiter':5},method='BFGS',tol=10**(-3))
+# var = init_game([3,0.92])
+# print(var)
+# 2 9575
+#3,0.91 
+values = []
+params = []
+for order_param in np.linspace(1,10,10):
+    for end_point_param in np.linspace(0.86,0.99,13):
+        var = init_game([order_param,end_point_param])
+        values.append(var)
+        params.append((order_param,end_point_param))
+
+best_idx = np.argmin(np.array(values))
+print(values)
+print(values[best_idx])
+print(params[best_idx])
+
+
+# import torch
+# order_param = torch.nn.Parameter(torch.tensor(1.0))
+# end_point_param = torch.nn.Parameter(torch.tensor(0.9))
+# optimizer = torch.optim.Adam([order_param]+[end_point_param],lr=0.1)
+# values = []
+
+# for iter in range(10):
+#     optimizer.zero_grad()
+#     var = init_game(X=[order_param.item(),end_point_param.item()])
+#     values.append([var,order_param.item(),end_point_param.item()])
+#     loss = torch.tensor(var, requires_grad=True)
+#     loss.backward()
+#     optimizer.step()   
+# print(values)
+
+# res = minimize(fun=init_game,x0=[2,0.90],options={'maxiter':5},method='BFGS',tol=10**(-3))
