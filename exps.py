@@ -5,12 +5,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy import stats
+import seaborn as sns
+import random
+
+random.seed(42)
+np.random.seed(42)
+
 
 TARGET = 5
 N = TARGET+1
 G = 5 #5
 B = 6
-SIM_GAMES = 1000
+SIM_GAMES = 3000
 
 ORDER_TYPE = 1 #1,2,4 # 'Poly', 'Exp'
 
@@ -88,6 +94,9 @@ for n1 in range(N-2,-1,-1):
                         X = [n1,g1,b1,n2,g2,b2]
                         U1,U2 = get_admissible_controls(X)
 
+                        if n1==4 and g1==0 and b1==1 and n2==4 and g2==0 and b2==1:
+                            print("hej")
+
                         payoff_p1 = np.zeros((U1+1,U2+1))
                         for u1 in range(U1+1):
                             for u2 in range(U2+1):
@@ -117,6 +126,8 @@ for n1 in range(N-2,-1,-1):
                             if w:
                                 counter+=1
                                 #print(f"Counter: {counter} payoff_p1: {payoff_p1} X: {X}")
+                            if payoff_p1.shape[0]>1 and payoff_p1.shape[1]>1:
+                                print("hje")
 
                         V[n1,g1,b1,n2,g2,b2] = res[0][0] @ payoff_p1 @ res[0][1]
 
@@ -236,12 +247,45 @@ for game_realizations in tqdm(range(SIM_GAMES)):
 
     #print(f"Simulated Game outcome using {ORDER_TYPE} initialization")
     #print(game_df.to_latex(index=False))
-game_df
-plt.title(f"Game score progress over time for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=10)
-plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=8)
-plt.ylabel(f"Game score",fontname="Times New Roman",fontsize=8)
+
+
+plt.figure()
+print((game_df[game_df['Game']==1.0][['t', 'n1', 'g1', 'b1', 'n2', 'g2', 'b2', 'u1', 'u2']].round(decimals=2)).to_latex(index=False,))
+
+game_df['S']=game_df['n1']-game_df['n2']
+
+
+game_df.describe()[['g1','b1','u1','g2','b2','u2']]
+
+plt.scatter(game_df['g1'],game_df['g2'])
+plt.show()
+
+
+plt.plot(game_df[game_df['Game']==1.0]['S'])
+plt.title(f"Game score progress over time, order={ORDER_TYPE}",fontname="Times New Roman", fontweight="bold",fontsize=14)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=12)
+plt.ylabel(f"Game score",fontname="Times New Roman",fontsize=12)
+plt.tight_layout()
+plt.savefig('game_progress.pdf',dpi=500,bbox_inches='tight')
+
+
+n1_vec = np.array([0,1,2,2,2,3,3,3,4])
+n2_vec = np.array([0,0,0,1,2,2])
+plt.plot()
+
+plt.title(f"Game score progress over time for {SIM_GAMES} game simulations, order={ORDER_TYPE}",fontname="Times New Roman", fontweight="bold",fontsize=12)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=10)
+plt.ylabel(f"Game score",fontname="Times New Roman",fontsize=10)
 plt.tight_layout()
 plt.savefig(f"Lineplot Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
+
+plt.figure()
+plt.plot(game_df[game_df['Game']==1]['n1']-game_df[game_df['Game']==1]['n2'])
+plt.title(f"Game score progress over time, order={ORDER_TYPE}",fontname="Times New Roman", fontweight="bold",fontsize=12)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=10)
+plt.ylabel(f"Game score",fontname="Times New Roman",fontsize=10)
+plt.tight_layout()
+plt.savefig(f"Walk Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
 
 plt.figure()
@@ -252,7 +296,7 @@ counts,bins,_ = plt.hist(filtered_game_df['S'],bins=np.arange(-G - 0.5, (G+2) + 
 print(counter/counter_global,"her")
 print(f"Skewness: {stats.skew(counts)}")
 print(f"Variance: {game_df.groupby(['Game'])[['S']].var().mean().values[0]}")
-plt.title(f"Distribution of game scores for {SIM_GAMES} game simulations",fontname="Times New Roman", fontweight="bold",fontsize=12)
+plt.title(f"Distribution of game scores for {SIM_GAMES} game simulations, order={ORDER_TYPE}",fontname="Times New Roman", fontweight="bold",fontsize=12)
 plt.xlabel(f"Game scores",fontname="Times New Roman",fontsize=10)
 plt.ylabel(f"Density",fontname="Times New Roman",fontsize=10)
 plt.tight_layout()
@@ -293,8 +337,6 @@ plt.savefig(f"Histograms Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches=
 # plt.savefig(f"Heatmap Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
 
 
-
-import seaborn as sns
 # annotations = np.zeros_like(bins)
 # fig, axes = plt.subplots(figsize=(10,8))
 # BINS = bins.copy().T
@@ -312,23 +354,43 @@ import seaborn as sns
 # for i in range(NEW_BINS.shape[1]):
 #     NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
 
+# import seaborn as sns
+# bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=False,bins=[np.unique(game_df['t']),np.arange(-G,G+1,1)])
+# BINS = bins.copy().T
+# NEW_BINS = BINS.copy()
+# for i in range(NEW_BINS.shape[1]):
+#     NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
+# annotations = np.zeros_like(NEW_BINS)
+# fig, axes = plt.subplots(figsize=(10,8))
+# for i in range(NEW_BINS.shape[0]):
+#     for j in range(NEW_BINS.shape[1]):
+#         if NEW_BINS[i,j]>0:
+#             annotations[i,j]= NEW_BINS[i,j]
+#         else:
+#             annotations[i,j] = None
+# mask = NEW_BINS <= 0
+# sns.heatmap(NEW_BINS,annot=annotations,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
+# plt.show()
 
-bins,count_x,count_y,_ = plt.hist2d(game_df['t'],game_df['S'],density=False,bins=[np.unique(time),np.arange(-G,G+1,1)])
-BINS = bins.copy().T
-NEW_BINS = BINS.copy()
-for i in range(NEW_BINS.shape[1]):
-    NEW_BINS[:,i] = BINS[:,i]/BINS[:,i].sum()
-import seaborn as sns
-annotations = np.zeros_like(NEW_BINS)
-fig, axes = plt.subplots(figsize=(10,8))
-for i in range(NEW_BINS.shape[0]):
-    for j in range(NEW_BINS.shape[1]):
-        if NEW_BINS[i,j]>0:
-            annotations[i,j]= NEW_BINS[i,j]
+
+
+freq_matrix = np.zeros((11,10))
+for time_var in range(0,10):
+    tmp = game_df[game_df['t']==time_var]['S']
+    for j,score_var in enumerate(np.sort(game_df['S'].unique())):
+        freq_matrix[j,time_var] = (tmp==score_var).sum()/tmp.shape[0]    
+annotations = np.zeros_like(freq_matrix)
+for i in range(freq_matrix.shape[0]):
+    for j in range(freq_matrix.shape[1]):
+        if freq_matrix[i,j]>0:
+            annotations[i,j]= freq_matrix[i,j]
         else:
             annotations[i,j] = None
-mask = NEW_BINS <= 0
-sns.heatmap(NEW_BINS,annot=annotations,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
-plt.show()
+mask = freq_matrix <= 0
 
-
+plt.figure(figsize=(12,8))
+sns.heatmap(freq_matrix,annot=annotations,mask=mask,cmap='plasma',fmt=".2f",yticklabels=range(-5,6,1),xticklabels=range(0,11,1))
+plt.ylabel(f"Game Score",fontname="Times New Roman",fontsize=10)
+plt.title(f"Heatmap of game scores for {SIM_GAMES} game simulations, order={ORDER_TYPE}",fontname="Times New Roman", fontweight="bold",fontsize=12)
+plt.xlabel(f"Time (Number of Rounds)",fontname="Times New Roman",fontsize=10)
+plt.savefig(f"Heatmap Order_Type={ORDER_TYPE} G={G}.pdf",dpi=500,bbox_inches='tight')
